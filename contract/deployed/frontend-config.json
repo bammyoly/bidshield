@@ -1,0 +1,15 @@
+{
+  "VITE_MIDNIGHT_NETWORK": "preview",
+  "VITE_CONTRACT_ADDRESS": "9e8502f6c0854e8570f05985c90f502cbe4efd6d4c54325706e52cdfc814a785",
+  "VITE_INDEXER_HTTP": "https://indexer.preview.midnight.network/api/v4/graphql",
+  "VITE_INDEXER_WS": "wss://indexer.preview.midnight.network/api/v4/graphql/ws",
+  "VITE_NODE_URL": "https://rpc.preview.midnight.network",
+  "VITE_PROOF_SERVER": "http://127.0.0.1:6300",
+  "VITE_TENDER_ID": "62afda5104beb319425e98b88de081314e3199b2b299cb7815ec8f2972102978",
+  "VITE_POLICY_HASH": "2695cb091957971ac5346fd9930618e86f68839f5d127032b62234142ec31a77",
+  "VITE_COMMIT_START": "1791919770",
+  "VITE_COMMIT_END": "1792524630",
+  "VITE_REVEAL_END": "1793129430",
+  "VITE_PRIVATE_STATE_ID": "bidshieldPrivateState",
+  "VITE_ZK_ASSETS_BASE": "/zk/bidshield"
+}

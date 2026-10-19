@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* ── Custom Theme ─────────────────────────────────── */
+@theme {
+  --color-bg-deep: #0a0105;
+  --color-bg-surface: #12040a;
+  --color-accent: #fb7185;
+  --color-accent-dim: #be123c;
+}
+
+/* ── Base Styles ──────────────────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg-deep);
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  }
+}
+
+/* ── Utility Classes ──────────────────────────────── */
+@layer utilities {
+  .sky-grid {
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -20%, rgba(251, 113, 133, 0.08), transparent),
+      linear-gradient(180deg, var(--color-bg-deep) 0%, #0f0308 100%);
+    background-attachment: fixed;
+  }
+
+  .glass {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background-color: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+  }
+
+  .glass-hover {
+    transition: all 300ms ease;
+  }
+  .glass-hover:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .glow-rose {
+    box-shadow: 0 0 40px -12px rgba(251, 113, 133, 0.25);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-gradient {
+    background: linear-gradient(to right, #fda4af, #fbcfe8, #fb7185);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

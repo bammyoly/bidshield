@@ -1,0 +1,38 @@
+{
+  "contract": "bidshield",
+  "exportedCircuits": [
+    {
+      "name": "commitBid",
+      "args": [
+        "amount: Uint<64>",
+        "salt: Bytes<32>",
+        "documentHash: Bytes<32>"
+      ]
+    },
+    {
+      "name": "revealBid",
+      "args": [
+        "amount: Uint<64>",
+        "salt: Bytes<32>",
+        "documentHash: Bytes<32>"
+      ]
+    },
+    {
+      "name": "recordAward",
+      "args": [
+        "winner: Bytes<32>",
+        "memoHash: Bytes<32>"
+      ]
+    }
+  ],
+  "constructor": {
+    "args": [
+      "organizerSecret: Bytes<32> (private)",
+      "newTenderId: Bytes<32>",
+      "newPolicyHash: Bytes<32>",
+      "newCommitStart: Uint<64>",
+      "newCommitEnd: Uint<64>",
+      "newRevealEnd: Uint<64>"
+    ]
+  }
+}

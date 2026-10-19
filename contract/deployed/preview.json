@@ -1,0 +1,35 @@
+{
+  "name": "BidShield",
+  "network": "preview",
+  "networkId": "preview",
+  "contractAddress": "9e8502f6c0854e8570f05985c90f502cbe4efd6d4c54325706e52cdfc814a785",
+  "deploymentTxHash": "008b0fdd31d047d6fd333acf9f2f6b6bc7219af9195bdad63a83367741dedbdf42",
+  "deployer": "mn_addr_preview1guqu6wglqh5w0ju5jqvw9qefk0utascde77k6xgcmmc3hzn5n7dsfn5aw0",
+  "deployedAt": "2026-10-13T19:30:58.212Z",
+  "explorer": "https://preview.midnightexplorer.com/contract/9e8502f6c0854e8570f05985c90f502cbe4efd6d4c54325706e52cdfc814a785",
+  "endpoints": {
+    "indexer": "https://indexer.preview.midnight.network/api/v4/graphql",
+    "indexerWS": "wss://indexer.preview.midnight.network/api/v4/graphql/ws",
+    "node": "https://rpc.preview.midnight.network",
+    "proofServer": "http://127.0.0.1:6300"
+  },
+  "circuits": [
+    "commitBid",
+    "revealBid",
+    "recordAward"
+  ],
+  "witnesses": [
+    "localBidderSecret",
+    "localOrganizerSecret"
+  ],
+  "privateStateId": "bidshieldPrivateState",
+  "zkAssetsPath": "deployed/zk-assets",
+  "tender": {
+    "tenderId": "62afda5104beb319425e98b88de081314e3199b2b299cb7815ec8f2972102978",
+    "policyHash": "2695cb091957971ac5346fd9930618e86f68839f5d127032b62234142ec31a77",
+    "commitStart": "1791919770",
+    "commitEnd": "1792524630",
+    "revealEnd": "1793129430",
+    "timeUnit": "unix-seconds"
+  }
+}

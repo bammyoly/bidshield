@@ -1,0 +1,16 @@
+node_modules/
+.compact/
+*.tmp
+.DS_Store
+
+# Secrets and wallet caches (contract toolchain)
+contract/.env
+contract/.midnight-state.json
+contract/.midnight-wallet-state/
+contract/deployed/private/
+contract/midnight-level-db/
+.env
+
+# Build
+frontend/dist/
+frontend/.vite/

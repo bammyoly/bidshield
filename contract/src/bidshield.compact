@@ -1,0 +1,176 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+// BidShield MVP: one contract instance represents one tender.
+// Bid amounts, salts, and supporting-document hashes are private inputs at
+// commit time. The ledger stores only a tender-scoped pseudonym and commitment.
+// Revealed bid amounts and document hashes become public after reveal.
+
+enum TenderState {
+  COMMIT,
+  REVEAL,
+  AWARDED
+}
+
+struct PseudonymData {
+  tag: Bytes<32>,
+  tenderId: Bytes<32>,
+  secret: Bytes<32>
+}
+
+struct BidCommitmentData {
+  tag: Bytes<32>,
+  tenderId: Bytes<32>,
+  bidder: Bytes<32>,
+  amount: Uint<64>,
+  salt: Bytes<32>,
+  documentHash: Bytes<32>
+}
+
+export sealed ledger organizer: Bytes<32>;
+export sealed ledger tenderId: Bytes<32>;
+export sealed ledger policyHash: Bytes<32>;
+export sealed ledger commitStart: Uint<64>;
+export sealed ledger commitEnd: Uint<64>;
+export sealed ledger revealEnd: Uint<64>;
+
+export ledger tenderState: TenderState;
+export ledger commitments: Map<Bytes<32>, Bytes<32>>;
+export ledger revealedBidders: Set<Bytes<32>>;
+export ledger revealedAmounts: Map<Bytes<32>, Uint<64>>;
+export ledger revealedDocumentHashes: Map<Bytes<32>, Bytes<32>>;
+export ledger committedCount: Counter;
+export ledger revealCount: Counter;
+export ledger awardWinner: Bytes<32>;
+export ledger awardMemoHash: Bytes<32>;
+
+// The frontend's private-state provider supplies a stable, random secret per
+// user and tender. Never derive this secret from a public wallet address.
+witness localBidderSecret(): Bytes<32>;
+witness localOrganizerSecret(): Bytes<32>;
+
+constructor(
+  organizerSecret: Bytes<32>,
+  newTenderId: Bytes<32>,
+  newPolicyHash: Bytes<32>,
+  newCommitStart: Uint<64>,
+  newCommitEnd: Uint<64>,
+  newRevealEnd: Uint<64>
+) {
+  assert(newCommitStart < newCommitEnd, "Commit window must have positive duration");
+  assert(newCommitEnd < newRevealEnd, "Reveal window must follow commit window");
+
+  organizer = disclose(organizerKey(organizerSecret, newTenderId));
+  tenderId = disclose(newTenderId);
+  policyHash = disclose(newPolicyHash);
+  commitStart = disclose(newCommitStart);
+  commitEnd = disclose(newCommitEnd);
+  revealEnd = disclose(newRevealEnd);
+  tenderState = TenderState.COMMIT;
+  awardWinner = disclose(pad(32, "bidshield:no-award"));
+  awardMemoHash = disclose(pad(32, "bidshield:no-memo"));
+}
+
+// A private bid is committed directly in the proof. Only the commitment and
+// tender-scoped pseudonym are written to public ledger state.
+export circuit commitBid(
+  amount: Uint<64>,
+  salt: Bytes<32>,
+  documentHash: Bytes<32>
+): [] {
+  assert(tenderState == TenderState.COMMIT, "Tender is not accepting commitments");
+  assert(blockTimeGte(commitStart), "Commit window has not opened");
+  assert(blockTimeLt(commitEnd), "Commit window has closed");
+
+  const bidder = disclose(bidderKey(localBidderSecret(), tenderId));
+  assert(!commitments.member(bidder), "Bidder has already committed");
+
+  const commitment = bidCommitment(tenderId, bidder, amount, salt, documentHash);
+  commitments.insert(bidder, disclose(commitment));
+  committedCount.increment(1);
+}
+
+// Revealing is permissionless at the protocol level, but requires the original
+// bidder secret and exact bid data. Reveal makes amount and document hash public.
+export circuit revealBid(
+  amount: Uint<64>,
+  salt: Bytes<32>,
+  documentHash: Bytes<32>
+): [] {
+  assert(blockTimeGte(commitEnd), "Commit window is still open");
+  assert(blockTimeLt(revealEnd), "Reveal window has closed");
+  assert(tenderState != TenderState.AWARDED, "Tender has already been awarded");
+
+  const bidder = disclose(bidderKey(localBidderSecret(), tenderId));
+  assert(commitments.member(bidder), "No commitment found for this bidder");
+  assert(!revealedBidders.member(bidder), "Bid has already been revealed");
+
+  const expected = bidCommitment(tenderId, bidder, amount, salt, documentHash);
+  assert(commitments.lookup(bidder) == disclose(expected), "Reveal does not match commitment");
+
+  const disclosedAmount = disclose(amount);
+  const disclosedDocHash = disclose(documentHash);
+
+  tenderState = TenderState.REVEAL;
+  revealedBidders.insert(bidder);
+  revealedAmounts.insert(bidder, disclosedAmount);
+  revealedDocumentHashes.insert(bidder, disclosedDocHash);
+  revealCount.increment(1);
+}
+
+// The buyer can record an award only after the reveal window. This records the
+// decision; it does NOT prove that the buyer chose fairly or selected the
+// lowest bid. Those remain procurement-policy / external-review questions.
+export circuit recordAward(winner: Bytes<32>, memoHash: Bytes<32>): [] {
+  assert(tenderState != TenderState.AWARDED, "Award has already been recorded");
+  assert(blockTimeGte(revealEnd), "Reveal window has not ended");
+
+  const secret = localOrganizerSecret();
+  assert(organizerKey(secret, tenderId) == organizer, "Only the tender organizer may record the award");
+
+  const disclosedWinner = disclose(winner);
+  const disclosedMemoHash = disclose(memoHash);
+
+  assert(revealedBidders.member(disclosedWinner), "Winner must have a revealed bid");
+
+  awardWinner = disclosedWinner;
+  awardMemoHash = disclosedMemoHash;
+  tenderState = TenderState.AWARDED;
+}
+
+circuit bidderKey(secret: Bytes<32>, id: Bytes<32>): Bytes<32> {
+  const data: PseudonymData = PseudonymData {
+    tag: pad(32, "bidshield:bidder:v1"),
+    tenderId: id,
+    secret: secret
+  };
+  return persistentHash<PseudonymData>(data);
+}
+
+circuit organizerKey(secret: Bytes<32>, id: Bytes<32>): Bytes<32> {
+  const data: PseudonymData = PseudonymData {
+    tag: pad(32, "bidshield:organizer:v1"),
+    tenderId: id,
+    secret: secret
+  };
+  return persistentHash<PseudonymData>(data);
+}
+
+circuit bidCommitment(
+  id: Bytes<32>,
+  bidder: Bytes<32>,
+  amount: Uint<64>,
+  salt: Bytes<32>,
+  documentHash: Bytes<32>
+): Bytes<32> {
+  const data: BidCommitmentData = BidCommitmentData {
+    tag: pad(32, "bidshield:commit:v1"),
+    tenderId: id,
+    bidder: bidder,
+    amount: amount,
+    salt: salt,
+    documentHash: documentHash
+  };
+  return persistentHash<BidCommitmentData>(data);
+}
