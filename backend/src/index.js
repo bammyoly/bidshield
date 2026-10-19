@@ -5,16 +5,37 @@ import { connectDb, dbState } from './db.js';
 import tendersRouter from './routes/tenders.js';
 import bidsRouter from './routes/bids.js';
 
-
 const app = express();
 const PORT = process.env.PORT || 8787;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || true;
 
+// --- CORS CONFIGURATION FIX ---
 app.use(
   cors({
-    origin: CORS_ORIGIN === 'true' ? true : CORS_ORIGIN.split(',').map((s) => s.trim()),
-  }),
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return callback(null, true);
+
+      // Allow Vercel deployments and local development
+      if (
+        origin === 'https://bidshield-eta.vercel.app' ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost')
+      ) {
+        return callback(null, true);
+      }
+
+      // Fallback: allow all origins for hackathon demo
+      return callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+  })
 );
+
+// Respond to preflight OPTIONS requests immediately
+app.options('*', cors());
+
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/health', (_req, res) => {
@@ -28,7 +49,6 @@ app.get('/health', (_req, res) => {
 app.use('/api/tenders', tendersRouter);
 app.use('/api/tenders/:tenderId/bids', bidsRouter);
 app.use('/api/bids', bidsRouter);
-
 
 app.use((err, _req, res, _next) => {
   console.error(err);
